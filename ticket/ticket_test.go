@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/sardap/zendesk/ticket"
+	"github.com/sardap/zendesk/utility"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,11 +18,12 @@ func TestTicketJsonParse(t *testing.T) {
 	json.Unmarshal(ticketsJson, &result)
 
 	// Check first value
-	expectedFirstTicket := ticket.Ticket{
+	createdAt, _ := time.Parse(utility.ZendeskTimeFormat, "2016-04-28T11:19:34 -10:00")
+	expectedTicket := ticket.Ticket{
 		ID:             "436bf9b0-1147-4c0a-8439-6f79833bff5b",
 		URL:            "http://initech.zendesk.com/api/v2/tickets/436bf9b0-1147-4c0a-8439-6f79833bff5b.json",
 		ExternalID:     "9210cdc9-4bee-485f-a078-35396cd74063",
-		CreatedAt:      "2016-04-28T11:19:34 -10:00",
+		CreatedAt:      utility.ZendeskTime{Time: createdAt},
 		Type:           "incident",
 		Subject:        "A Catastrophe in Korea (North)",
 		Description:    "Nostrud ad sit velit cupidatat laboris ipsum nisi amet laboris ex exercitation amet et proident. Ipsum fugiat aute dolore tempor nostrud velit ipsum.",
@@ -40,5 +43,5 @@ func TestTicketJsonParse(t *testing.T) {
 		Via:          "web",
 	}
 
-	assert.Equal(t, result, expectedFirstTicket, "ticket not parsed correctly check Ticket json tags")
+	assert.Equal(t, result, expectedTicket, "ticket not parsed correctly check Ticket json tags")
 }
