@@ -1,6 +1,8 @@
 package db
 
-import "github.com/sardap/zendesk/utility"
+import (
+	"github.com/sardap/zendesk/utility"
+)
 
 type Organization struct {
 	ID            int                 `json:"_id"`
@@ -12,6 +14,33 @@ type Organization struct {
 	Details       string              `json:"details"`
 	SharedTickets bool                `json:"shared_tickets"`
 	Tags          []string            `json:"tags"`
+	// foreign keys
+	users   []int
+	tickets []string
+}
+
+func (o *Organization) GetUsers(db *DB) ([]*User, error) {
+	var result []*User
+
+	for _, id := range o.users {
+		if usr, err := db.GetUser(id); err == nil {
+			result = append(result, usr)
+		}
+	}
+
+	return result, nil
+}
+
+func (o *Organization) GetTickets(db *DB) ([]*Ticket, error) {
+	var result []*Ticket
+
+	for _, id := range o.tickets {
+		if ticket, err := db.GetTicket(id); err == nil {
+			result = append(result, ticket)
+		}
+	}
+
+	return result, nil
 }
 
 type User struct {
@@ -34,6 +63,33 @@ type User struct {
 	Tags           []string            `json:"tags"`
 	Suspended      bool                `json:"suspended"`
 	Role           string              `json:"role"`
+	// foreign keys
+	assignee  []string
+	submitter []string
+}
+
+func (u *User) GetAssignee(db *DB) ([]*Ticket, error) {
+	var result []*Ticket
+
+	for _, id := range u.assignee {
+		if ticket, err := db.GetTicket(id); err == nil {
+			result = append(result, ticket)
+		}
+	}
+
+	return result, nil
+}
+
+func (u *User) GetSubmitter(db *DB) ([]*Ticket, error) {
+	var result []*Ticket
+
+	for _, id := range u.submitter {
+		if ticket, err := db.GetTicket(id); err == nil {
+			result = append(result, ticket)
+		}
+	}
+
+	return result, nil
 }
 
 type Ticket struct {
