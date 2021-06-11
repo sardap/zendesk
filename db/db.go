@@ -6,8 +6,6 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
-	"github.com/sardap/zendesk/org"
-	"github.com/sardap/zendesk/ticket"
 )
 
 var (
@@ -19,28 +17,16 @@ func init() {
 }
 
 type DB struct {
-	tickets map[string]ticket.Ticket
-	orgs    map[int]org.Organization
+	tickets map[string]Ticket
+	orgs    map[int]Organization
+	users   map[int]User
 }
 
-func Create(ticketReader io.Reader, orgsReader io.Reader) (*DB, error) {
+func Create(orgsReader, usersReader, ticketsReader io.Reader) (*DB, error) {
 	reuslt := &DB{
-		tickets: make(map[string]ticket.Ticket),
-		orgs:    make(map[int]org.Organization),
-	}
-
-	// Tickets
-	ticketsJson, err := io.ReadAll(ticketReader)
-	if err != nil {
-		return nil, err
-	}
-
-	var tickets []ticket.Ticket
-	if err := json.Unmarshal(ticketsJson, &tickets); err != nil {
-		return nil, err
-	}
-	for _, ticket := range tickets {
-		reuslt.tickets[ticket.ID] = ticket
+		tickets: make(map[string]Ticket),
+		orgs:    make(map[int]Organization),
+		users:   make(map[int]User),
 	}
 
 	// Organizations
@@ -49,7 +35,7 @@ func Create(ticketReader io.Reader, orgsReader io.Reader) (*DB, error) {
 		return nil, err
 	}
 
-	var orgs []org.Organization
+	var orgs []Organization
 	if err := json.Unmarshal(orgsJson, &orgs); err != nil {
 		return nil, err
 	}
@@ -57,22 +43,59 @@ func Create(ticketReader io.Reader, orgsReader io.Reader) (*DB, error) {
 		reuslt.orgs[org.ID] = org
 	}
 
+	// Users
+	usersJson, err := io.ReadAll(usersReader)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []User
+	if err := json.Unmarshal(usersJson, &users); err != nil {
+		return nil, err
+	}
+	for _, user := range users {
+		reuslt.users[user.ID] = user
+	}
+
+	// Tickets
+	ticketsJson, err := io.ReadAll(ticketsReader)
+	if err != nil {
+		return nil, err
+	}
+
+	var tickets []Ticket
+	if err := json.Unmarshal(ticketsJson, &tickets); err != nil {
+		return nil, err
+	}
+	for _, ticket := range tickets {
+		reuslt.tickets[ticket.ID] = ticket
+	}
+
 	return reuslt, nil
 }
 
-func (d *DB) GetTicket(id string) (*ticket.Ticket, error) {
-	result, ok := d.tickets[id]
+func (d *DB) GetOrganization(id int) (*Organization, error) {
+	result, ok := d.orgs[id]
 	if !ok {
-		return nil, errors.Wrapf(ErrNotFound, "%s", id)
+		return nil, errors.Wrapf(ErrNotFound, "%d", id)
 	}
 
 	return &result, nil
 }
 
-func (d *DB) GetOrganization(id int) (*org.Organization, error) {
-	result, ok := d.orgs[id]
+func (d *DB) GetUser(id int) (*User, error) {
+	result, ok := d.users[id]
 	if !ok {
 		return nil, errors.Wrapf(ErrNotFound, "%d", id)
+	}
+
+	return &result, nil
+}
+
+func (d *DB) GetTicket(id string) (*Ticket, error) {
+	result, ok := d.tickets[id]
+	if !ok {
+		return nil, errors.Wrapf(ErrNotFound, "%s", id)
 	}
 
 	return &result, nil
