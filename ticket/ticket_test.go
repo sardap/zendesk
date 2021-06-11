@@ -11,13 +11,9 @@ import (
 
 func TestTicketJsonParse(t *testing.T) {
 
-	var tickets []ticket.Ticket
-	ticketsJson, _ := os.ReadFile("ticket_testdata/tickets.json")
-	json.Unmarshal(ticketsJson, &tickets)
-
-	assert.NotNil(t, tickets, "tickets not parsed")
-
-	assert.Equal(t, len(tickets), 200, "expected 200 entires for tickets")
+	var result ticket.Ticket
+	ticketsJson, _ := os.ReadFile("ticket_testdata/ticket.json")
+	json.Unmarshal(ticketsJson, &result)
 
 	// Check first value
 	expectedFirstTicket := ticket.Ticket{
@@ -44,32 +40,5 @@ func TestTicketJsonParse(t *testing.T) {
 		Via:          "web",
 	}
 
-	assert.Equal(t, tickets[0], expectedFirstTicket, "first ticket not parsed correctly check Ticket json tags")
-
-	// Check last value
-	expectedLastTicket := ticket.Ticket{
-		ID:             "50dfc8bc-31de-411e-92bf-a6d6b9dfa490",
-		URL:            "http://initech.zendesk.com/api/v2/tickets/50dfc8bc-31de-411e-92bf-a6d6b9dfa490.json",
-		ExternalID:     "8bc8bee7-2d98-4b69-b4a9-4f348ff41fa3",
-		CreatedAt:      "2016-03-08T09:44:54 -11:00",
-		Type:           "task",
-		Subject:        "A Problem in South Africa",
-		Description:    "Esse nisi occaecat pariatur veniam culpa dolore anim elit aliquip. Cupidatat mollit nulla consectetur ullamco tempor esse.",
-		Priority:       "high",
-		Status:         "hold",
-		SubmitterID:    43,
-		AssigneeID:     54,
-		OrganizationID: 103,
-		Tags: []string{
-			"Georgia",
-			"Tennessee",
-			"Mississippi",
-			"Marshall Islands",
-		},
-		HasIncidents: true,
-		DueAt:        "2016-08-03T09:17:37 -10:00",
-		Via:          "voice",
-	}
-
-	assert.Equal(t, tickets[len(tickets)-1], expectedLastTicket, "last ticket not parsed correctly check Ticket json tags")
+	assert.Equal(t, result, expectedFirstTicket, "ticket not parsed correctly check Ticket json tags")
 }
