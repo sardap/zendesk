@@ -27,6 +27,16 @@ func createBlankDb() *db.DB {
 	return reuslt
 }
 
+func createLoadedDB() *db.DB {
+	orgsFile, usersFile, ticketsFile := getFiles()
+	defer orgsFile.Close()
+	defer usersFile.Close()
+	defer ticketsFile.Close()
+
+	result, _ := db.Create(orgsFile, usersFile, ticketsFile)
+	return result
+}
+
 func TestAddAndGetOrganization(t *testing.T) {
 	database := createBlankDb()
 
@@ -123,12 +133,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestGetOrganization(t *testing.T) {
-	orgsFile, usersFile, ticketsFile := getFiles()
-	defer orgsFile.Close()
-	defer usersFile.Close()
-	defer ticketsFile.Close()
-
-	database, _ := db.Create(orgsFile, usersFile, ticketsFile)
+	database := createLoadedDB()
 
 	_, err := database.GetOrganization(101)
 	assert.NoError(t, err, "Error getting first ticket")
@@ -138,12 +143,7 @@ func TestGetOrganization(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	orgsFile, usersFile, ticketsFile := getFiles()
-	defer orgsFile.Close()
-	defer usersFile.Close()
-	defer ticketsFile.Close()
-
-	database, _ := db.Create(orgsFile, usersFile, ticketsFile)
+	database := createLoadedDB()
 
 	_, err := database.GetUser(1)
 	assert.NoError(t, err, "Error getting first ticket")
@@ -153,12 +153,7 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetTicket(t *testing.T) {
-	orgsFile, usersFile, ticketsFile := getFiles()
-	defer orgsFile.Close()
-	defer usersFile.Close()
-	defer ticketsFile.Close()
-
-	database, _ := db.Create(orgsFile, usersFile, ticketsFile)
+	database := createLoadedDB()
 
 	_, err := database.GetTicket("436bf9b0-1147-4c0a-8439-6f79833bff5b")
 	assert.NoError(t, err, "Error getting first ticket")

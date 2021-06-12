@@ -20,11 +20,11 @@ func init() {
 
 type DB struct {
 	tickets map[string]*Ticket
-	orgs    map[int]*Organization
-	users   map[int]*User
+	orgs    map[int64]*Organization
+	users   map[int64]*User
 }
 
-func (d *DB) GetOrganization(id int) (*Organization, error) {
+func (d *DB) GetOrganization(id int64) (*Organization, error) {
 	result, ok := d.orgs[id]
 	if !ok {
 		return nil, errors.Wrapf(ErrNotFound, "%d", id)
@@ -33,7 +33,7 @@ func (d *DB) GetOrganization(id int) (*Organization, error) {
 	return result, nil
 }
 
-func (d *DB) GetUser(id int) (*User, error) {
+func (d *DB) GetUser(id int64) (*User, error) {
 	result, ok := d.users[id]
 	if !ok {
 		return nil, errors.Wrapf(ErrNotFound, "%d", id)
@@ -53,7 +53,7 @@ func (d *DB) GetTicket(id string) (*Ticket, error) {
 
 func (d *DB) AddOrganization(toAdd Organization) error {
 	if toAdd.users == nil {
-		toAdd.users = make([]int, 0)
+		toAdd.users = make([]int64, 0)
 	}
 	if toAdd.tickets == nil {
 		toAdd.tickets = make([]string, 0)
@@ -102,8 +102,8 @@ func (d *DB) AddTicket(toAdd Ticket) error {
 func Create(orgsReader, usersReader, ticketsReader io.Reader) (*DB, error) {
 	result := &DB{
 		tickets: make(map[string]*Ticket),
-		orgs:    make(map[int]*Organization),
-		users:   make(map[int]*User),
+		orgs:    make(map[int64]*Organization),
+		users:   make(map[int64]*User),
 	}
 
 	// Organizations

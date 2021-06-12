@@ -5,7 +5,7 @@ import (
 )
 
 type Organization struct {
-	ID            int                 `json:"_id"`
+	ID            int64               `json:"_id"`
 	URL           string              `json:"url"`
 	ExternalID    string              `json:"external_id"`
 	Name          string              `json:"name"`
@@ -15,7 +15,7 @@ type Organization struct {
 	SharedTickets bool                `json:"shared_tickets"`
 	Tags          []string            `json:"tags"`
 	// foreign keys
-	users   []int
+	users   []int64
 	tickets []string
 }
 
@@ -44,7 +44,7 @@ func (o *Organization) GetTickets(db *DB) ([]*Ticket, error) {
 }
 
 type User struct {
-	ID             int                 `json:"_id"`
+	ID             int64               `json:"_id"`
 	URL            string              `json:"url"`
 	ExternalID     string              `json:"external_id"`
 	Name           string              `json:"name"`
@@ -59,7 +59,7 @@ type User struct {
 	Email          string              `json:"email"`
 	Phone          string              `json:"phone"`
 	Signature      string              `json:"signature"`
-	OrganizationID int                 `json:"organization_id"`
+	OrganizationID int64               `json:"organization_id"`
 	Tags           []string            `json:"tags"`
 	Suspended      bool                `json:"suspended"`
 	Role           string              `json:"role"`
@@ -102,9 +102,9 @@ type Ticket struct {
 	Description    string              `json:"description"`
 	Priority       string              `json:"priority"`
 	Status         string              `json:"status"`
-	SubmitterID    int                 `json:"submitter_id"`
-	AssigneeID     int                 `json:"assignee_id"`
-	OrganizationID int                 `json:"organization_id"`
+	SubmitterID    int64               `json:"submitter_id"`
+	AssigneeID     int64               `json:"assignee_id"`
+	OrganizationID int64               `json:"organization_id"`
 	Tags           []string            `json:"tags"`
 	HasIncidents   bool                `json:"has_incidents"`
 	DueAt          string              `json:"due_at"`
