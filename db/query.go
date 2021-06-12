@@ -2,8 +2,6 @@ package db
 
 import (
 	"fmt"
-	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -11,11 +9,13 @@ import (
 var (
 	ErrFieldMissing   error
 	ErrInvalidResouce error
+	ErrInvalidMatch   error
 )
 
 func init() {
 	ErrFieldMissing = fmt.Errorf("field doesn't exist in that type")
 	ErrInvalidResouce = fmt.Errorf("invalid resouce given")
+	ErrInvalidMatch = fmt.Errorf("invalid match given")
 }
 
 type ResourceType string
@@ -26,80 +26,97 @@ const (
 	ResourceTicket       ResourceType = "ticket"
 )
 
-// Converts json struct tag into the associated field
-func getFieldName(obj interface{}, field string) string {
-	// This is slower then a switch but requires no extra code When we add a new fied to a struct
-	reflectInfo := reflect.TypeOf(obj)
-	for i := 0; i < reflectInfo.NumField(); i++ {
-		memeber := reflectInfo.Field(i)
-		tag := string(memeber.Tag)
-		tag = strings.TrimPrefix(tag, `json:"`)
-		tag = strings.TrimSuffix(tag, `"`)
+type ConnectorType string
 
-		// Target field found
-		if strings.ToLower(field) == tag {
-			return memeber.Name
-		}
-	}
-
-	return ""
-}
+const (
+	ConnectorTypeIntersection ConnectorType = "intersection"
+	ConnectorTypeUnion        ConnectorType = "union"
+)
 
 type Condition interface {
-	Resolve(db *DB) (interface{}, error)
+	Resolve(db *DB) ([]Data, error)
+	GetResource() ResourceType
+	GetConnector() ConnectorType
 }
 
 type Query struct {
 	Conditions []Condition
 }
 
-type FulLMatchCondition struct {
-	Resource ResourceType
-	Field    string
-	Match    string
+func (q *Query) Resolve(db *DB) ([]Data, error) {
+	matches := make(map[string]Data)
+
+	for i, con := range q.Conditions {
+		condMatches, err := con.Resolve(db)
+		if err != nil {
+			return nil, err
+		}
+
+		switch con.GetConnector() {
+		case ConnectorTypeIntersection:
+			intersection := make(map[string]Data)
+			for _, val := range condMatches {
+				if i == 0 {
+					intersection[val.GetKey()] = val
+				} else {
+					if _, ok := matches[val.GetKey()]; ok {
+						intersection[val.GetKey()] = val
+					}
+				}
+			}
+
+			matches = intersection
+		case ConnectorTypeUnion:
+			for _, val := range condMatches {
+				matches[val.GetKey()] = val
+			}
+		default:
+			panic(fmt.Errorf("unimplemented connector type"))
+		}
+	}
+
+	var result []Data
+	for _, val := range matches {
+		result = append(result, val)
+	}
+
+	return result, nil
 }
 
-func (f *FulLMatchCondition) Resolve(db *DB) (interface{}, error) {
+type FulLMatchCondition struct {
+	Resource  ResourceType
+	Connector ConnectorType
+	Field     string
+	Match     string
+}
 
-	getValue := func(value interface{}, fieldName string) string {
-		reflectValue := reflect.Indirect(reflect.ValueOf(value))
-		return fmt.Sprintf("%v", reflectValue.FieldByName(fieldName).Interface())
-	}
+func (f *FulLMatchCondition) GetConnector() ConnectorType {
+	return f.Connector
+}
+
+func (f *FulLMatchCondition) GetResource() ResourceType {
+	return f.Resource
+}
+
+func (f *FulLMatchCondition) Resolve(db *DB) ([]Data, error) {
+	var result []Data
 
 	switch f.Resource {
 	case ResourceOrganization:
-		fieldName := getFieldName(Organization{}, f.Field)
-		if fieldName == "" {
-			return nil, errors.Wrapf(ErrFieldMissing, "unable to find %s in %s", f.Field, f.Resource)
-		}
 		for _, val := range db.orgs {
-			if getValue(val, fieldName) == f.Match {
-				return val, nil
+			match, err := val.Match(f.Field, f.Match)
+			if err != nil {
+				return nil, err
+			}
+			if match {
+				result = append(result, val)
 			}
 		}
 	case ResourceUser:
-		fieldName := getFieldName(User{}, f.Field)
-		if fieldName == "" {
-			return nil, errors.Wrapf(ErrFieldMissing, "unable to find %s in %s", f.Field, f.Resource)
-		}
-		for _, val := range db.users {
-			if getValue(val, fieldName) == f.Match {
-				return val, nil
-			}
-		}
 	case ResourceTicket:
-		fieldName := getFieldName(Ticket{}, f.Field)
-		if fieldName == "" {
-			return nil, errors.Wrapf(ErrFieldMissing, "unable to find %s in %s", f.Field, f.Resource)
-		}
-		for _, val := range db.tickets {
-			if getValue(val, fieldName) == f.Match {
-				return val, nil
-			}
-		}
 	default:
-		return false, errors.Wrapf(ErrInvalidResouce, "%s", f.Resource)
+		return nil, errors.Wrapf(ErrInvalidResouce, "%s", f.Resource)
 	}
 
-	return false, errors.Wrapf(ErrNotFound, "no matches for %s with %s in %s", f.Field, f.Match, f.Resource)
+	return result, nil
 }

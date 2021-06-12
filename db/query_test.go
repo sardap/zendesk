@@ -18,21 +18,9 @@ func TestFulLMatchCondition(t *testing.T) {
 	}{
 		{
 			resource:     db.ResourceOrganization,
-			validField:   "_id",
-			validMatch:   "101",
-			invalidMatch: "10",
-		},
-		{
-			resource:     db.ResourceUser,
-			validField:   "_id",
-			validMatch:   "101",
-			invalidMatch: "10",
-		},
-		{
-			resource:     db.ResourceTicket,
-			validField:   "_id",
-			validMatch:   "101",
-			invalidMatch: "10",
+			validField:   "domain_names",
+			validMatch:   "kage.com",
+			invalidMatch: "sarda.dev",
 		},
 	}
 
@@ -76,4 +64,69 @@ func TestFulLMatchCondition(t *testing.T) {
 			testCase.resource, testCase.validField,
 		)
 	}
+}
+
+func TestQueryIntersection(t *testing.T) {
+	database := createLoadedDB()
+
+	query := db.Query{
+		Conditions: []db.Condition{
+			&db.FulLMatchCondition{
+				Resource:  db.ResourceOrganization,
+				Connector: db.ConnectorTypeIntersection,
+				Field:     "details",
+				Match:     "MegaCorp",
+			},
+			&db.FulLMatchCondition{
+				Resource:  db.ResourceOrganization,
+				Connector: db.ConnectorTypeIntersection,
+				Field:     "domain_names",
+				Match:     "otherway.com",
+			},
+		},
+	}
+
+	result, err := query.Resolve(database)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(result))
+
+	query = db.Query{
+		Conditions: []db.Condition{
+			&db.FulLMatchCondition{
+				Resource:  db.ResourceOrganization,
+				Connector: db.ConnectorTypeIntersection,
+				Field:     "details",
+				Match:     "MegaCorp",
+			},
+		},
+	}
+
+	result, err = query.Resolve(database)
+	assert.NoError(t, err)
+	assert.Equal(t, 9, len(result))
+}
+
+func TestQueryUnion(t *testing.T) {
+	database := createLoadedDB()
+
+	query := db.Query{
+		Conditions: []db.Condition{
+			&db.FulLMatchCondition{
+				Resource:  db.ResourceOrganization,
+				Connector: db.ConnectorTypeUnion,
+				Field:     "details",
+				Match:     "MegaCorp",
+			},
+			&db.FulLMatchCondition{
+				Resource:  db.ResourceOrganization,
+				Connector: db.ConnectorTypeUnion,
+				Field:     "name",
+				Match:     "Multron",
+			},
+		},
+	}
+
+	result, err := query.Resolve(database)
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(result))
 }

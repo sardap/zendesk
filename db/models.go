@@ -1,8 +1,17 @@
 package db
 
 import (
+	"fmt"
+	"strconv"
+	"time"
+
+	"github.com/pkg/errors"
 	"github.com/sardap/zendesk/utility"
 )
+
+type Data interface {
+	GetKey() string
+}
 
 type Organization struct {
 	ID            int64               `json:"_id"`
@@ -17,6 +26,50 @@ type Organization struct {
 	// foreign keys
 	users   []int64
 	tickets []string
+}
+
+func (o *Organization) GetKey() string {
+	return fmt.Sprintf("%d", o.ID)
+}
+
+func (o *Organization) Match(field, value string) (bool, error) {
+	switch field {
+	case "url":
+		return o.URL == value, nil
+	case "external_id":
+		return o.ExternalID == value, nil
+	case "name":
+		return o.Name == value, nil
+	case "domain_names":
+		for _, name := range o.DomainNames {
+			if name == value {
+				return true, nil
+			}
+		}
+		return false, nil
+	case "created_at":
+		t, err := time.Parse(utility.ZendeskTimeFormat, value)
+		if err != nil {
+			return false, errors.Wrapf(err, "time should be in %s format", utility.ZendeskTimeFormat)
+		}
+		return t.Equal(o.CreatedAt.Time), nil
+	case "details":
+		return o.Details == value, nil
+	case "shared_tickets":
+		b, err := strconv.ParseBool(value)
+		if err != nil {
+			return false, err
+		}
+		return b == o.SharedTickets, nil
+	case "tags":
+		for _, name := range o.Tags {
+			if name == value {
+				return true, nil
+			}
+		}
+	}
+
+	return false, ErrFieldMissing
 }
 
 func (o *Organization) GetUsers(db *DB) ([]*User, error) {
