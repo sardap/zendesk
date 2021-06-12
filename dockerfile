@@ -13,7 +13,7 @@ RUN go build -o main .
 # APP
 FROM alpine:latest
 
-WORKDIR /bin
+WORKDIR /app
 COPY --from=builder /app/main /bin/main
 
 ENTRYPOINT [ "/bin/main" ]

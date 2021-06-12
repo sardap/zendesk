@@ -39,7 +39,7 @@ Query Examples
 Run `docker build . -t zendesk-coding:paul-sarda`
 
 ### Running
-Run `docker run -rm zendesk-coding:paul-sarda ARGUMENTS HERE`
+Run `docker run --rm -v ${PWD}:/app zendesk-coding:paul-sarda`
 
 ## Local
 
@@ -49,4 +49,4 @@ run `go build .`
 ### Running
 Windows `./zendesk.exe`
 
-Linux / Mac `./zendesk ARGUMENTS HERE`
+Linux / Mac `./zendesk`
