@@ -54,9 +54,6 @@ func TestAddAndGetOrganization(t *testing.T) {
 
 func TestAddAndGetUser(t *testing.T) {
 	database := createBlankDb()
-	database.AddOrganization(db.Organization{
-		ID: 200,
-	})
 
 	expected := db.User{
 		ID:             100,
@@ -69,26 +66,10 @@ func TestAddAndGetUser(t *testing.T) {
 	usr, err := database.GetUser(100)
 	assert.NoError(t, err, "error getting user from DB")
 	assert.Equal(t, expected.ID, usr.ID, "usr gotten missmatch")
-
-	org, _ := database.GetOrganization(200)
-	users, err := org.GetUsers(database)
-	assert.NoError(t, err, "error getting user from org")
-	assert.Equal(t, expected.ID, users[0].ID, "user gotten from org missmtach")
 }
 
 func TestAddAndGetTicket(t *testing.T) {
 	database := createBlankDb()
-	database.AddOrganization(db.Organization{
-		ID: 200,
-	})
-	database.AddUser(db.User{
-		ID:             1,
-		OrganizationID: 200,
-	})
-	database.AddUser(db.User{
-		ID:             2,
-		OrganizationID: 200,
-	})
 
 	expected := db.Ticket{
 		ID:             "cool",
@@ -103,22 +84,6 @@ func TestAddAndGetTicket(t *testing.T) {
 	ticket, err := database.GetTicket("cool")
 	assert.NoError(t, err, "error getting ticket from DB")
 	assert.Equal(t, expected, *ticket, "ticket gotten missmatch")
-
-	// foreign keys
-	org, _ := database.GetOrganization(200)
-	tickets, err := org.GetTickets(database)
-	assert.NoError(t, err, "error getting ticket from org")
-	assert.Equal(t, tickets[0].ID, expected.ID, "ticket gotten from org missmtach")
-
-	usr, _ := database.GetUser(1)
-	tickets, err = usr.GetAssignee(database)
-	assert.NoError(t, err, "error getting ticket from user 1")
-	assert.Equal(t, tickets[0].ID, expected.ID, "ticket gotten from user 1 missmtach")
-
-	usr, _ = database.GetUser(2)
-	tickets, err = usr.GetSubmitter(database)
-	assert.NoError(t, err, "error getting ticket from user 2")
-	assert.Equal(t, tickets[0].ID, expected.ID, "ticket gotten from user 2 missmtach")
 }
 
 func TestCreate(t *testing.T) {

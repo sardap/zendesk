@@ -183,6 +183,15 @@ func TestOrganizationJsonParse(t *testing.T) {
 	assert.Equal(t, expectedOrg, result, "organization not parsed correctly check Organization json tags")
 }
 
+func TestOrganizationGetRelated(t *testing.T) {
+	database := createLoadedDB()
+
+	usr, _ := database.GetOrganization(101)
+	result := usr.GetRelated(database)
+
+	assert.Equal(t, 8, len(result))
+}
+
 func TestUserMatch(t *testing.T) {
 	// Invalid filed
 	_, err := expectedUser.Match("garbage", "garbage")
@@ -357,6 +366,15 @@ func TestUserJsonParse(t *testing.T) {
 	assert.Equal(t, expectedUser, result, "user not parsed correctly check User json tags")
 }
 
+func TestUserGetRelated(t *testing.T) {
+	database := createLoadedDB()
+
+	usr, _ := database.GetUser(1)
+	result := usr.GetRelated(database)
+
+	assert.Equal(t, 5, len(result))
+}
+
 func TestTicketMatch(t *testing.T) {
 	// Invalid filed
 	_, err := expectedTicket.Match("garbage", "garbage")
@@ -499,4 +517,13 @@ func TestTicketJsonParse(t *testing.T) {
 	json.Unmarshal(ticketsJson, &result)
 
 	assert.Equal(t, result, expectedTicket, "ticket not parsed correctly check Ticket json tags")
+}
+
+func TestTicketGetRelated(t *testing.T) {
+	database := createLoadedDB()
+
+	usr, _ := database.GetTicket("436bf9b0-1147-4c0a-8439-6f79833bff5b")
+	result := usr.GetRelated(database)
+
+	assert.Equal(t, 3, len(result))
 }

@@ -40,11 +40,20 @@ type Condition interface {
 	GetConnector() ConnectorType
 }
 
+type QueryResult struct {
+	Target  []Data `json:"target"`
+	Related struct {
+		Orgs    []Data `json:"organizations"`
+		Users   []Data `json:"users"`
+		Tickets []Data `json:"tickets"`
+	} `json:"related"`
+}
+
 type Query struct {
 	Conditions []Condition
 }
 
-func (q *Query) Resolve(db *DB) ([]Data, error) {
+func (q *Query) Resolve(db *DB) (*QueryResult, error) {
 	matches := make(map[string]Data)
 
 	for i, con := range q.Conditions {
@@ -76,12 +85,22 @@ func (q *Query) Resolve(db *DB) ([]Data, error) {
 		}
 	}
 
-	var result []Data
+	var result QueryResult
 	for _, val := range matches {
-		result = append(result, val)
+		result.Target = append(result.Target, val)
+		for _, related := range val.GetRelated(db) {
+			switch related.GetResourceType() {
+			case ResourceOrganization:
+				result.Related.Orgs = append(result.Related.Orgs, val)
+			case ResourceUser:
+				result.Related.Users = append(result.Related.Users, val)
+			case ResourceTicket:
+				result.Related.Tickets = append(result.Related.Tickets, val)
+			}
+		}
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 type IDMatchCondition struct {

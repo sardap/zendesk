@@ -45,6 +45,8 @@ func matchInt64(i int64, value string) (bool, error) {
 
 type Data interface {
 	GetKey() string
+	GetResourceType() ResourceType
+	GetRelated(db *DB) []Data
 }
 
 type Organization struct {
@@ -64,6 +66,24 @@ type Organization struct {
 
 func (o *Organization) GetKey() string {
 	return fmt.Sprintf("%d", o.ID)
+}
+
+func (o *Organization) GetResourceType() ResourceType {
+	return ResourceOrganization
+}
+
+func (o *Organization) GetRelated(db *DB) []Data {
+	var result []Data
+
+	// Note for some reason append(result, ary...) isn't working here
+	for _, usr := range o.getUsers(db) {
+		result = append(result, usr)
+	}
+	for _, ticket := range o.getTickets(db) {
+		result = append(result, ticket)
+	}
+
+	return result
 }
 
 func (o *Organization) Match(field, value string) (bool, error) {
@@ -89,7 +109,7 @@ func (o *Organization) Match(field, value string) (bool, error) {
 	return false, ErrFieldMissing
 }
 
-func (o *Organization) GetUsers(db *DB) ([]*User, error) {
+func (o *Organization) getUsers(db *DB) []*User {
 	var result []*User
 
 	for _, id := range o.users {
@@ -98,10 +118,10 @@ func (o *Organization) GetUsers(db *DB) ([]*User, error) {
 		}
 	}
 
-	return result, nil
+	return result
 }
 
-func (o *Organization) GetTickets(db *DB) ([]*Ticket, error) {
+func (o *Organization) getTickets(db *DB) []*Ticket {
 	var result []*Ticket
 
 	for _, id := range o.tickets {
@@ -110,7 +130,7 @@ func (o *Organization) GetTickets(db *DB) ([]*Ticket, error) {
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 type User struct {
@@ -138,8 +158,30 @@ type User struct {
 	submitter []string
 }
 
+func (u *User) GetResourceType() ResourceType {
+	return ResourceUser
+}
+
 func (u *User) GetKey() string {
 	return fmt.Sprintf("%d", u.ID)
+}
+
+func (u *User) GetRelated(db *DB) []Data {
+	var result []Data
+
+	if org, err := db.GetOrganization(u.OrganizationID); err == nil {
+		result = append(result, org)
+	}
+
+	// Note for some reason append(result, ary...) isn't working here
+	for _, ass := range u.getAssignee(db) {
+		result = append(result, ass)
+	}
+	for _, sub := range u.getSubmitter(db) {
+		result = append(result, sub)
+	}
+
+	return result
 }
 
 func (u *User) Match(field, value string) (bool, error) {
@@ -185,7 +227,7 @@ func (u *User) Match(field, value string) (bool, error) {
 	return false, ErrFieldMissing
 }
 
-func (u *User) GetAssignee(db *DB) ([]*Ticket, error) {
+func (u *User) getAssignee(db *DB) []*Ticket {
 	var result []*Ticket
 
 	for _, id := range u.assignee {
@@ -194,10 +236,10 @@ func (u *User) GetAssignee(db *DB) ([]*Ticket, error) {
 		}
 	}
 
-	return result, nil
+	return result
 }
 
-func (u *User) GetSubmitter(db *DB) ([]*Ticket, error) {
+func (u *User) getSubmitter(db *DB) []*Ticket {
 	var result []*Ticket
 
 	for _, id := range u.submitter {
@@ -206,7 +248,7 @@ func (u *User) GetSubmitter(db *DB) ([]*Ticket, error) {
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 type Ticket struct {
@@ -230,6 +272,25 @@ type Ticket struct {
 
 func (t *Ticket) GetKey() string {
 	return t.ID
+}
+
+func (t *Ticket) GetResourceType() ResourceType {
+	return ResourceTicket
+}
+
+func (t *Ticket) GetRelated(db *DB) []Data {
+	var result []Data
+
+	if org, err := db.GetOrganization(t.OrganizationID); err == nil {
+		result = append(result, org)
+	}
+	if subUsr, err := db.GetUser(t.SubmitterID); err == nil {
+		result = append(result, subUsr)
+	}
+	if assUsr, err := db.GetUser(t.AssigneeID); err == nil {
+		result = append(result, assUsr)
+	}
+	return result
 }
 
 func (t *Ticket) Match(field, value string) (bool, error) {

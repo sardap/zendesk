@@ -125,6 +125,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	jsonBytes, _ := json.Marshal(result)
+	if len(result.Target) <= 0 {
+		fmt.Printf("No entires found\n")
+		os.Exit(0)
+	}
+	jsonBytes, _ := json.MarshalIndent(result, "", "\t")
 	fmt.Printf("%s\n", jsonBytes)
 }

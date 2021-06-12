@@ -142,6 +142,26 @@ func TestIDMatchCondition(t *testing.T) {
 	}
 }
 
+func TestQueryRelated(t *testing.T) {
+	database := createLoadedDB()
+
+	query := db.Query{
+		Conditions: []db.Condition{
+			&db.IDMatchCondition{
+				Resource: db.ResourceUser,
+				Target:   "1",
+			},
+		},
+	}
+
+	result, err := query.Resolve(database)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(result.Target))
+	assert.Equal(t, 1, len(result.Related.Orgs))
+	assert.Equal(t, 4, len(result.Related.Tickets))
+	assert.Equal(t, 0, len(result.Related.Users))
+}
+
 func TestQueryIntersection(t *testing.T) {
 	database := createLoadedDB()
 
@@ -164,7 +184,7 @@ func TestQueryIntersection(t *testing.T) {
 
 	result, err := query.Resolve(database)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(result))
+	assert.Equal(t, 1, len(result.Target))
 
 	query = db.Query{
 		Conditions: []db.Condition{
@@ -179,7 +199,7 @@ func TestQueryIntersection(t *testing.T) {
 
 	result, err = query.Resolve(database)
 	assert.NoError(t, err)
-	assert.Equal(t, 9, len(result))
+	assert.Equal(t, 9, len(result.Target))
 }
 
 func TestQueryUnion(t *testing.T) {
@@ -204,5 +224,5 @@ func TestQueryUnion(t *testing.T) {
 
 	result, err := query.Resolve(database)
 	assert.NoError(t, err)
-	assert.Equal(t, 10, len(result))
+	assert.Equal(t, 10, len(result.Target))
 }
