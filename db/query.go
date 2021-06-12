@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -81,6 +82,53 @@ func (q *Query) Resolve(db *DB) ([]Data, error) {
 	}
 
 	return result, nil
+}
+
+type IDMatchCondition struct {
+	Resource ResourceType
+	Target   string
+}
+
+func (i *IDMatchCondition) GetConnector() ConnectorType {
+	return ConnectorTypeUnion
+}
+
+func (i *IDMatchCondition) GetResource() ResourceType {
+	return i.Resource
+}
+
+func (i *IDMatchCondition) Resolve(db *DB) ([]Data, error) {
+	switch i.Resource {
+	case ResourceOrganization:
+		id, err := strconv.ParseInt(i.Target, 10, 64)
+		if err != nil {
+			return nil, errors.Wrap(err, "given target ID must be a number and base 10")
+		}
+		result, err := db.GetOrganization(id)
+		if err != nil {
+			return nil, err
+		}
+		return []Data{result}, nil
+	case ResourceUser:
+		id, err := strconv.ParseInt(i.Target, 10, 64)
+		if err != nil {
+			return nil, errors.Wrap(err, "given target ID must be a number and base 10")
+		}
+		result, err := db.GetUser(id)
+		if err != nil {
+			return nil, err
+		}
+		return []Data{result}, nil
+	case ResourceTicket:
+		result, err := db.GetTicket(i.Target)
+		if err != nil {
+			return nil, err
+		}
+		return []Data{result}, nil
+	default:
+		return nil, errors.Wrapf(ErrInvalidResouce, "%s", i.Resource)
+	}
+
 }
 
 type FulLMatchCondition struct {

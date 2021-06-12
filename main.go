@@ -62,15 +62,25 @@ func ParseFlags() (Args, error) {
 		return result, fmt.Errorf("invalid resource given in query please check -h")
 	}
 
-	fullMatch := &db.FulLMatchCondition{
-		Resource:  resource,
-		Connector: db.ConnectorTypeUnion,
-		Field:     splits[1],
-		Match:     splits[2],
+	var cond db.Condition
+
+	field := splits[1]
+	if field == "_id" || field == "id" {
+		cond = &db.IDMatchCondition{
+			Resource: resource,
+			Target:   splits[2],
+		}
+	} else {
+		cond = &db.FulLMatchCondition{
+			Resource:  resource,
+			Connector: db.ConnectorTypeUnion,
+			Field:     field,
+			Match:     splits[2],
+		}
 	}
 
 	result.Query = db.Query{
-		Conditions: []db.Condition{fullMatch},
+		Conditions: []db.Condition{cond},
 	}
 
 	return result, nil

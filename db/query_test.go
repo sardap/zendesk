@@ -82,6 +82,66 @@ func TestFulLMatchCondition(t *testing.T) {
 	}
 }
 
+func TestIDMatchCondition(t *testing.T) {
+	database := createLoadedDB()
+
+	testCases := []struct {
+		resource  db.ResourceType
+		validID   string
+		invalidID string
+	}{
+		{
+			resource:  db.ResourceOrganization,
+			validID:   "101",
+			invalidID: "10",
+		},
+		{
+			resource:  db.ResourceUser,
+			validID:   "10",
+			invalidID: "1000",
+		},
+		{
+			resource:  db.ResourceTicket,
+			validID:   "436bf9b0-1147-4c0a-8439-6f79833bff5b",
+			invalidID: "A Catastrophe in Korea (North)",
+		},
+	}
+
+	for _, testCase := range testCases {
+		// valid match
+		idMatch := db.IDMatchCondition{
+			Resource: testCase.resource,
+			Target:   testCase.validID,
+		}
+
+		matches, err := idMatch.Resolve(database)
+		assert.NoErrorf(t, err,
+			"value not found on resource %s id %s",
+			testCase.resource, testCase.validID,
+		)
+		assert.GreaterOrEqual(t, 1, len(matches),
+			"value not found on resource %s id %s",
+			testCase.resource, testCase.validID,
+		)
+
+		// no target found
+		idMatch = db.IDMatchCondition{
+			Resource: testCase.resource,
+			Target:   testCase.invalidID,
+		}
+
+		matches, err = idMatch.Resolve(database)
+		assert.ErrorIsf(t, err, db.ErrNotFound,
+			"value should not have been found resource %s target %s",
+			testCase.resource, testCase.invalidID,
+		)
+		assert.Equalf(t, 0, len(matches),
+			"value should not have been found resource %s target %s",
+			testCase.resource, testCase.invalidID,
+		)
+	}
+}
+
 func TestQueryIntersection(t *testing.T) {
 	database := createLoadedDB()
 
