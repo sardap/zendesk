@@ -123,6 +123,15 @@ func (f *FulLMatchCondition) Resolve(db *DB) ([]Data, error) {
 			}
 		}
 	case ResourceTicket:
+		for _, val := range db.tickets {
+			match, err := val.Match(f.Field, f.Match)
+			if err != nil {
+				return nil, err
+			}
+			if match {
+				result = append(result, val)
+			}
+		}
 	default:
 		return nil, errors.Wrapf(ErrInvalidResouce, "%s", f.Resource)
 	}

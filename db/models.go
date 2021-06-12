@@ -224,6 +224,47 @@ type Ticket struct {
 	OrganizationID int64               `json:"organization_id"`
 	Tags           []string            `json:"tags"`
 	HasIncidents   bool                `json:"has_incidents"`
-	DueAt          string              `json:"due_at"`
+	DueAt          utility.ZendeskTime `json:"due_at"`
 	Via            string              `json:"via"`
+}
+
+func (t *Ticket) GetKey() string {
+	return t.ID
+}
+
+func (t *Ticket) Match(field, value string) (bool, error) {
+	switch field {
+	case "url":
+		return t.URL == value, nil
+	case "external_id":
+		return t.ExternalID == value, nil
+	case "created_at":
+		return matchTime(t.CreatedAt.Time, value)
+	case "type":
+		return t.Type == value, nil
+	case "subject":
+		return t.Subject == value, nil
+	case "description":
+		return t.Description == value, nil
+	case "priority":
+		return t.Priority == value, nil
+	case "status":
+		return t.Status == value, nil
+	case "submitter_id":
+		return matchInt64(t.SubmitterID, value)
+	case "assignee_id":
+		return matchInt64(t.AssigneeID, value)
+	case "organization_id":
+		return matchInt64(t.OrganizationID, value)
+	case "tags":
+		return matchStringArray(t.Tags, value)
+	case "has_incidents":
+		return matchBool(t.HasIncidents, value)
+	case "due_at":
+		return matchTime(t.DueAt.Time, value)
+	case "via":
+		return t.Via == value, nil
+	}
+
+	return false, ErrFieldMissing
 }

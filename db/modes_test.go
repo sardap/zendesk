@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	expectedOrg  db.Organization
-	expectedUser db.User
+	expectedOrg    db.Organization
+	expectedUser   db.User
+	expectedTicket db.Ticket
 )
 
 func init() {
@@ -70,6 +71,31 @@ func init() {
 		Role:      "admin",
 	}
 
+	createdAt, _ = time.Parse(utility.ZendeskTimeFormat, "2016-04-28T11:19:34 -10:00")
+	dueAt, _ := time.Parse(utility.ZendeskTimeFormat, "2016-07-31T02:37:50 -10:00")
+	expectedTicket = db.Ticket{
+		ID:             "436bf9b0-1147-4c0a-8439-6f79833bff5b",
+		URL:            "http://initech.zendesk.com/api/v2/tickets/436bf9b0-1147-4c0a-8439-6f79833bff5b.json",
+		ExternalID:     "9210cdc9-4bee-485f-a078-35396cd74063",
+		CreatedAt:      utility.ZendeskTime{Time: createdAt},
+		Type:           "incident",
+		Subject:        "A Catastrophe in Korea (North)",
+		Description:    "Nostrud ad sit velit cupidatat laboris ipsum nisi amet laboris ex exercitation amet et proident. Ipsum fugiat aute dolore tempor nostrud velit ipsum.",
+		Priority:       "high",
+		Status:         "pending",
+		SubmitterID:    38,
+		AssigneeID:     24,
+		OrganizationID: 116,
+		Tags: []string{
+			"Ohio",
+			"Pennsylvania",
+			"American Samoa",
+			"Northern Mariana Islands",
+		},
+		HasIncidents: false,
+		DueAt:        utility.ZendeskTime{Time: dueAt},
+		Via:          "web",
+	}
 }
 
 func TestOrganizationMatch(t *testing.T) {
@@ -331,37 +357,146 @@ func TestUserJsonParse(t *testing.T) {
 	assert.Equal(t, expectedUser, result, "user not parsed correctly check User json tags")
 }
 
+func TestTicketMatch(t *testing.T) {
+	// Invalid filed
+	_, err := expectedTicket.Match("garbage", "garbage")
+	assert.ErrorIs(t, err, db.ErrFieldMissing, "invlaid field")
+
+	// URL
+	match, err := expectedTicket.Match("url", "http://initech.zendesk.com/api/v2/tickets/436bf9b0-1147-4c0a-8439-6f79833bff5b.json")
+	assert.Truef(t, match, "should have matched url")
+	assert.NoError(t, err, "error found for url")
+
+	match, _ = expectedTicket.Match("url", "https://sarda.dev")
+	assert.Falsef(t, match, "should have not matched url")
+
+	// external_id
+	match, err = expectedTicket.Match("external_id", "9210cdc9-4bee-485f-a078-35396cd74063")
+	assert.Truef(t, match, "should have matched external_id")
+	assert.NoError(t, err, "error found for external_id")
+
+	match, _ = expectedTicket.Match("external_id", "https://sarda.dev")
+	assert.Falsef(t, match, "should have not matched external_id")
+
+	// created_at
+	match, err = expectedTicket.Match("created_at", "2016-04-28T11:19:34 -10:00")
+	assert.Truef(t, match, "should have matched created_at")
+	assert.NoError(t, err, "error found for created_at")
+
+	match, _ = expectedTicket.Match("created_at", "2025-05-21T11:10:28 -10:00")
+	assert.Falsef(t, match, "should have not matched created_at")
+
+	// type
+	match, err = expectedTicket.Match("type", "incident")
+	assert.Truef(t, match, "should have matched type")
+	assert.NoError(t, err, "error found for type")
+
+	match, _ = expectedTicket.Match("type", "false")
+	assert.Falsef(t, match, "should have not matched type")
+
+	// subject
+	match, err = expectedTicket.Match("subject", "A Catastrophe in Korea (North)")
+	assert.Truef(t, match, "should have matched subject")
+	assert.NoError(t, err, "error found for subject")
+
+	match, _ = expectedTicket.Match("subject", "false")
+	assert.Falsef(t, match, "should have not matched subject")
+
+	// description
+	match, err = expectedTicket.Match("description", "Nostrud ad sit velit cupidatat laboris ipsum nisi amet laboris ex exercitation amet et proident. Ipsum fugiat aute dolore tempor nostrud velit ipsum.")
+	assert.Truef(t, match, "should have matched description")
+	assert.NoError(t, err, "error found for description")
+
+	match, _ = expectedTicket.Match("description", "false")
+	assert.Falsef(t, match, "should have not matched description")
+
+	// priority
+	match, err = expectedTicket.Match("priority", "high")
+	assert.Truef(t, match, "should have matched priority")
+	assert.NoError(t, err, "error found for priority")
+
+	match, _ = expectedTicket.Match("priority", "false")
+	assert.Falsef(t, match, "should have not matched priority")
+
+	// status
+	match, err = expectedTicket.Match("status", "pending")
+	assert.Truef(t, match, "should have matched status")
+	assert.NoError(t, err, "error found for status")
+
+	match, _ = expectedTicket.Match("status", "false")
+	assert.Falsef(t, match, "should have not matched status")
+
+	// submitter_id
+	match, err = expectedTicket.Match("submitter_id", "38")
+	assert.Truef(t, match, "should have matched submitter_id")
+	assert.NoError(t, err, "error found for submitter_id")
+
+	match, _ = expectedTicket.Match("submitter_id", "10")
+	assert.Falsef(t, match, "should have not matched submitter_id")
+
+	// assignee_id
+	match, err = expectedTicket.Match("assignee_id", "24")
+	assert.Truef(t, match, "should have matched assignee_id")
+	assert.NoError(t, err, "error found for assignee_id")
+
+	match, _ = expectedTicket.Match("assignee_id", "10")
+	assert.Falsef(t, match, "should have not matched assignee_id")
+
+	// organization_id
+	match, err = expectedTicket.Match("organization_id", "116")
+	assert.Truef(t, match, "should have matched organization_id")
+	assert.NoError(t, err, "error found for organization_id")
+
+	match, _ = expectedTicket.Match("organization_id", "10")
+	assert.Falsef(t, match, "should have not matched organization_id")
+
+	// organization_id
+	match, err = expectedTicket.Match("organization_id", "116")
+	assert.Truef(t, match, "should have matched organization_id")
+	assert.NoError(t, err, "error found for organization_id")
+
+	match, _ = expectedTicket.Match("organization_id", "10")
+	assert.Falsef(t, match, "should have not matched organization_id")
+
+	// tags
+	match, err = expectedTicket.Match("tags", "Pennsylvania")
+	assert.Truef(t, match, "should have matched tags")
+	assert.NoError(t, err, "error found for tags")
+
+	match, _ = expectedTicket.Match("tags", "sarda.dev")
+	assert.Falsef(t, match, "should have not matched tags")
+
+	// has_incidents
+	match, err = expectedTicket.Match("has_incidents", "false")
+	assert.Truef(t, match, "should have matched has_incidents")
+	assert.NoError(t, err, "error found for has_incidents")
+
+	match, _ = expectedTicket.Match("has_incidents", "true")
+	assert.Falsef(t, match, "should have not matched has_incidents")
+
+	// has_incidents
+	match, err = expectedTicket.Match("due_at", "2016-07-31T02:37:50 -10:00")
+	assert.Truef(t, match, "should have matched due_at")
+	assert.NoError(t, err, "error found for due_at")
+
+	match, err = expectedTicket.Match("due_at", "2025-07-31T02:37:50 -10:00")
+	assert.Falsef(t, match, "should have not matched due_at")
+	assert.NoError(t, err, "error found for due_at")
+
+	// via
+	match, err = expectedTicket.Match("via", "web")
+	assert.Truef(t, match, "should have matched via")
+	assert.NoError(t, err, "error found for via")
+
+	match, _ = expectedTicket.Match("via", "garbage")
+	assert.Falsef(t, match, "should have not matched via")
+}
+
 func TestTicketJsonParse(t *testing.T) {
 
 	var result db.Ticket
 	ticketsJson, _ := os.ReadFile("db_testdata/ticket.json")
 	json.Unmarshal(ticketsJson, &result)
-
-	// Check first value
-	createdAt, _ := time.Parse(utility.ZendeskTimeFormat, "2016-04-28T11:19:34 -10:00")
-	expectedTicket := db.Ticket{
-		ID:             "436bf9b0-1147-4c0a-8439-6f79833bff5b",
-		URL:            "http://initech.zendesk.com/api/v2/tickets/436bf9b0-1147-4c0a-8439-6f79833bff5b.json",
-		ExternalID:     "9210cdc9-4bee-485f-a078-35396cd74063",
-		CreatedAt:      utility.ZendeskTime{Time: createdAt},
-		Type:           "incident",
-		Subject:        "A Catastrophe in Korea (North)",
-		Description:    "Nostrud ad sit velit cupidatat laboris ipsum nisi amet laboris ex exercitation amet et proident. Ipsum fugiat aute dolore tempor nostrud velit ipsum.",
-		Priority:       "high",
-		Status:         "pending",
-		SubmitterID:    38,
-		AssigneeID:     24,
-		OrganizationID: 116,
-		Tags: []string{
-			"Ohio",
-			"Pennsylvania",
-			"American Samoa",
-			"Northern Mariana Islands",
-		},
-		HasIncidents: false,
-		DueAt:        "2016-07-31T02:37:50 -10:00",
-		Via:          "web",
-	}
 
 	assert.Equal(t, result, expectedTicket, "ticket not parsed correctly check Ticket json tags")
 }
