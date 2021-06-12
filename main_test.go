@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func init() {
+	os.Mkdir("testdata", os.ModeDir)
+}
+
 func TestParseArgsFullMatch(t *testing.T) {
 	// This is to prevent flag parsed twice error
 	flag.CommandLine = flag.NewFlagSet("", flag.ExitOnError)

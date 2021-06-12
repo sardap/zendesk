@@ -29,10 +29,10 @@ func ParseFlags() (Args, error) {
 	flag.StringVar(
 		&queryStr, "query", "",
 		fmt.Sprintf(
-			"the query to be ran. should go \"RESOURCE FIELD TARGET VALUE\"\n"+
-				"Example \"user name Cross Barlow\" will return the user along with any"+
-				"tickets and organization associated with said user.\n"+
-				"valid resoruce are %s %s and %s. Check the given json files for the field names\n",
+			"the query to be ran. should go \"RESOURCE FIELD TARGET VALUE\" "+
+				"Example \"user name Cross Barlow\" will return the user along with any "+
+				"tickets and organization associated with said user. "+
+				"valid resoruce are %s %s and %s. Check the given json files for the field names ",
 			db.ResourceOrganization, db.ResourceUser, db.ResourceTicket,
 		),
 	)
@@ -114,6 +114,11 @@ func createDB(args Args) *db.DB {
 }
 
 func main() {
+	if len(os.Args) == 0 {
+		fmt.Printf("Missing arugments try -h\n")
+		os.Exit(0)
+	}
+
 	args, err := ParseFlags()
 	if err != nil {
 		panic(err)
