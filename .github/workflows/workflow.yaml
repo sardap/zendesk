@@ -1,0 +1,12 @@
+on: push
+name: tests
+jobs:
+  checks:
+    name: run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: run
+        uses: cedrickring/golang-action/go1.16@1.7.0
+        env:
+          PROJECT_PATH: "."
