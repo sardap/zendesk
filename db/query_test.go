@@ -22,6 +22,12 @@ func TestFulLMatchCondition(t *testing.T) {
 			validMatch:   "kage.com",
 			invalidMatch: "sarda.dev",
 		},
+		{
+			resource:     db.ResourceUser,
+			validField:   "name",
+			validMatch:   "Francisca Rasmussen",
+			invalidMatch: "garbage garbagehead",
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -34,7 +40,7 @@ func TestFulLMatchCondition(t *testing.T) {
 
 		_, err := fullMatch.Resolve(database)
 		assert.NoErrorf(t, err,
-			"value not found on resouce %s field %s match %s",
+			"value not found on resource %s field %s match %s",
 			testCase.resource, testCase.validField, testCase.validMatch,
 		)
 
@@ -45,13 +51,13 @@ func TestFulLMatchCondition(t *testing.T) {
 			Match:    testCase.invalidMatch,
 		}
 
-		_, err = fullMatch.Resolve(database)
-		assert.ErrorIsf(t, err, db.ErrNotFound,
-			"value found when should not exist on resouce %s field %s match %s",
-			testCase.resource, testCase.validField, testCase.validMatch,
+		matches, _ := fullMatch.Resolve(database)
+		assert.Equalf(t, 0, len(matches),
+			"value should not have been found resource %s field %s match %s",
+			testCase.resource, testCase.validField, testCase.invalidMatch,
 		)
 
-		// no match found
+		// no field missing
 		fullMatch = db.FulLMatchCondition{
 			Resource: testCase.resource,
 			Field:    testCase.invalidMatch,
@@ -60,7 +66,7 @@ func TestFulLMatchCondition(t *testing.T) {
 
 		_, err = fullMatch.Resolve(database)
 		assert.ErrorIsf(t, err, db.ErrFieldMissing,
-			"field found when should not exist on resouce %s field %s",
+			"field found when should not exist on resource %s field %s",
 			testCase.resource, testCase.validField,
 		)
 	}

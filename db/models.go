@@ -9,6 +9,40 @@ import (
 	"github.com/sardap/zendesk/utility"
 )
 
+func matchBool(expected bool, value string) (bool, error) {
+	b, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, err
+	}
+	return b == expected, nil
+}
+
+func matchTime(expected time.Time, value string) (bool, error) {
+	t, err := time.Parse(utility.ZendeskTimeFormat, value)
+	if err != nil {
+		return false, errors.Wrapf(err, "time should be in %s format", utility.ZendeskTimeFormat)
+	}
+	return t.Equal(expected), nil
+}
+
+func matchStringArray(ary []string, value string) (bool, error) {
+	for _, name := range ary {
+		if name == value {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func matchInt64(i int64, value string) (bool, error) {
+	parsedInt, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return false, errors.Wrapf(err, "given value should be base 10")
+	}
+
+	return i == parsedInt, nil
+}
+
 type Data interface {
 	GetKey() string
 }
@@ -41,32 +75,15 @@ func (o *Organization) Match(field, value string) (bool, error) {
 	case "name":
 		return o.Name == value, nil
 	case "domain_names":
-		for _, name := range o.DomainNames {
-			if name == value {
-				return true, nil
-			}
-		}
-		return false, nil
+		return matchStringArray(o.DomainNames, value)
 	case "created_at":
-		t, err := time.Parse(utility.ZendeskTimeFormat, value)
-		if err != nil {
-			return false, errors.Wrapf(err, "time should be in %s format", utility.ZendeskTimeFormat)
-		}
-		return t.Equal(o.CreatedAt.Time), nil
+		return matchTime(o.CreatedAt.Time, value)
 	case "details":
 		return o.Details == value, nil
 	case "shared_tickets":
-		b, err := strconv.ParseBool(value)
-		if err != nil {
-			return false, err
-		}
-		return b == o.SharedTickets, nil
+		return matchBool(o.SharedTickets, value)
 	case "tags":
-		for _, name := range o.Tags {
-			if name == value {
-				return true, nil
-			}
-		}
+		return matchStringArray(o.Tags, value)
 	}
 
 	return false, ErrFieldMissing
@@ -119,6 +136,53 @@ type User struct {
 	// foreign keys
 	assignee  []string
 	submitter []string
+}
+
+func (u *User) GetKey() string {
+	return fmt.Sprintf("%d", u.ID)
+}
+
+func (u *User) Match(field, value string) (bool, error) {
+	switch field {
+	case "url":
+		return u.URL == value, nil
+	case "external_id":
+		return u.ExternalID == value, nil
+	case "name":
+		return u.Name == value, nil
+	case "alias":
+		return u.Alias == value, nil
+	case "created_at":
+		return matchTime(u.CreatedAt.Time, value)
+	case "active":
+		return matchBool(u.Active, value)
+	case "verified":
+		return matchBool(u.Verified, value)
+	case "shared":
+		return matchBool(u.Shared, value)
+	case "locale":
+		return u.Locale == value, nil
+	case "timezone":
+		return u.Timezone == value, nil
+	case "last_login_at":
+		return matchTime(u.LastLoginAt.Time, value)
+	case "email":
+		return u.Email == value, nil
+	case "phone":
+		return u.Phone == value, nil
+	case "signature":
+		return u.Signature == value, nil
+	case "organization_id":
+		return matchInt64(u.OrganizationID, value)
+	case "tags":
+		return matchStringArray(u.Tags, value)
+	case "suspended":
+		return matchBool(u.Suspended, value)
+	case "role":
+		return u.Role == value, nil
+	}
+
+	return false, ErrFieldMissing
 }
 
 func (u *User) GetAssignee(db *DB) ([]*Ticket, error) {

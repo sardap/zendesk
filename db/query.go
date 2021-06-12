@@ -113,6 +113,15 @@ func (f *FulLMatchCondition) Resolve(db *DB) ([]Data, error) {
 			}
 		}
 	case ResourceUser:
+		for _, val := range db.users {
+			match, err := val.Match(f.Field, f.Match)
+			if err != nil {
+				return nil, err
+			}
+			if match {
+				result = append(result, val)
+			}
+		}
 	case ResourceTicket:
 	default:
 		return nil, errors.Wrapf(ErrInvalidResouce, "%s", f.Resource)

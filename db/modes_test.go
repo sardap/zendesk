@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	expectedOrg db.Organization
+	expectedOrg  db.Organization
+	expectedUser db.User
 )
 
 func init() {
@@ -39,9 +40,43 @@ func init() {
 		},
 	}
 
+	// Check first value
+	createdAt, _ = time.Parse(utility.ZendeskTimeFormat, "2016-04-15T05:19:46 -10:00")
+	lastLoginAt, _ := time.Parse(utility.ZendeskTimeFormat, "2013-08-04T01:03:27 -10:00")
+	expectedUser = db.User{
+		ID:             1,
+		URL:            "http://initech.zendesk.com/api/v2/users/1.json",
+		ExternalID:     "74341f74-9c79-49d5-9611-87ef9b6eb75f",
+		Name:           "Francisca Rasmussen",
+		Alias:          "Miss Coffey",
+		CreatedAt:      utility.ZendeskTime{Time: createdAt},
+		Active:         true,
+		Verified:       true,
+		Shared:         false,
+		Locale:         "en-AU",
+		Timezone:       "Sri Lanka",
+		LastLoginAt:    utility.ZendeskTime{Time: lastLoginAt},
+		Email:          "coffeyrasmussen@flotonic.com",
+		Phone:          "8335-422-718",
+		Signature:      "Don't Worry Be Happy!",
+		OrganizationID: 119,
+		Tags: []string{
+			"Springville",
+			"Sutton",
+			"Hartsville/Hartley",
+			"Diaperville",
+		},
+		Suspended: true,
+		Role:      "admin",
+	}
+
 }
 
 func TestOrganizationMatch(t *testing.T) {
+	// Invalid filed
+	_, err := expectedOrg.Match("garbage", "garbage")
+	assert.ErrorIs(t, err, db.ErrFieldMissing, "invlaid field")
+
 	// URL
 	match, err := expectedOrg.Match("url", "http://initech.zendesk.com/api/v2/organizations/101.json")
 	assert.Truef(t, match, "should have matched url")
@@ -122,41 +157,176 @@ func TestOrganizationJsonParse(t *testing.T) {
 	assert.Equal(t, expectedOrg, result, "organization not parsed correctly check Organization json tags")
 }
 
+func TestUserMatch(t *testing.T) {
+	// Invalid filed
+	_, err := expectedUser.Match("garbage", "garbage")
+	assert.ErrorIs(t, err, db.ErrFieldMissing, "invlaid field")
+
+	// URL
+	match, err := expectedUser.Match("url", "http://initech.zendesk.com/api/v2/users/1.json")
+	assert.Truef(t, match, "should have matched url")
+	assert.NoError(t, err, "error found for url")
+
+	match, _ = expectedUser.Match("url", "https://sarda.dev")
+	assert.Falsef(t, match, "should have not matched url")
+
+	// external_id
+	match, err = expectedUser.Match("external_id", "74341f74-9c79-49d5-9611-87ef9b6eb75f")
+	assert.Truef(t, match, "should have matched external_id")
+	assert.NoError(t, err, "error found for external_id")
+
+	match, _ = expectedUser.Match("external_id", "https://sarda.dev")
+	assert.Falsef(t, match, "should have not matched external_id")
+
+	// name
+	match, err = expectedUser.Match("name", "Francisca Rasmussen")
+	assert.Truef(t, match, "should have matched name")
+	assert.NoError(t, err, "error found for name")
+
+	match, _ = expectedUser.Match("name", "https://sarda.dev")
+	assert.Falsef(t, match, "should have not matched name")
+
+	// alias
+	match, err = expectedUser.Match("alias", "Miss Coffey")
+	assert.Truef(t, match, "should have matched alias")
+	assert.NoError(t, err, "error found for alias")
+
+	match, _ = expectedUser.Match("alias", "sarda.dev")
+	assert.Falsef(t, match, "should have not matched alias")
+
+	// created_at
+	match, err = expectedUser.Match("created_at", "2016-04-15T05:19:46 -10:00")
+	assert.Truef(t, match, "should have matched created_at")
+	assert.NoError(t, err, "error found for created_at")
+
+	match, _ = expectedUser.Match("created_at", "2025-05-21T11:10:28 -10:00")
+	assert.Falsef(t, match, "should have not matched created_at")
+
+	_, err = expectedUser.Match("created_at", "sarda.dev")
+	assert.Error(t, err, "should have error for created_at")
+
+	// active
+	match, err = expectedUser.Match("active", "true")
+	assert.Truef(t, match, "should have matched active")
+	assert.NoError(t, err, "error found for active")
+
+	match, _ = expectedUser.Match("active", "false")
+	assert.Falsef(t, match, "should have not matched active")
+
+	_, err = expectedUser.Match("active", "garbage")
+	assert.Error(t, err, "should error for active")
+
+	// verified
+	match, err = expectedUser.Match("verified", "true")
+	assert.Truef(t, match, "should have matched verified")
+	assert.NoError(t, err, "error found for verified")
+
+	match, _ = expectedUser.Match("verified", "false")
+	assert.Falsef(t, match, "should have not matched verified")
+
+	// shared
+	match, err = expectedUser.Match("shared", "false")
+	assert.Truef(t, match, "should have matched shared")
+	assert.NoError(t, err, "error found for shared")
+
+	match, _ = expectedUser.Match("shared", "true")
+	assert.Falsef(t, match, "should have not matched shared")
+
+	// locale
+	match, err = expectedUser.Match("locale", "en-AU")
+	assert.Truef(t, match, "should have matched locale")
+	assert.NoError(t, err, "error found for locale")
+
+	match, _ = expectedUser.Match("locale", "garbage")
+	assert.Falsef(t, match, "should have not matched locale")
+
+	// timezone
+	match, err = expectedUser.Match("timezone", "Sri Lanka")
+	assert.Truef(t, match, "should have matched timezone")
+	assert.NoError(t, err, "error found for timezone")
+
+	match, _ = expectedUser.Match("timezone", "garbage")
+	assert.Falsef(t, match, "should have not matched timezone")
+
+	// last_login_at
+	match, err = expectedUser.Match("last_login_at", "2013-08-04T01:03:27 -10:00")
+	assert.Truef(t, match, "should have matched last_login_at")
+	assert.NoError(t, err, "error found for last_login_at")
+
+	match, err = expectedUser.Match("last_login_at", "2025-08-04T01:03:27 -10:00")
+	assert.NoError(t, err, "error found for last_login_at")
+	assert.Falsef(t, match, "should have not matched last_login_at")
+
+	// email
+	match, err = expectedUser.Match("email", "coffeyrasmussen@flotonic.com")
+	assert.Truef(t, match, "should have matched email")
+	assert.NoError(t, err, "error found for email")
+
+	match, err = expectedUser.Match("email", "garbage@garbage.com")
+	assert.NoError(t, err, "error found for email")
+	assert.Falsef(t, match, "should have not matched email")
+
+	// phone
+	match, err = expectedUser.Match("phone", "8335-422-718")
+	assert.Truef(t, match, "should have matched phone")
+	assert.NoError(t, err, "error found for phone")
+
+	match, err = expectedUser.Match("phone", "8335-422-999")
+	assert.NoError(t, err, "error found for phone")
+	assert.Falsef(t, match, "should have not matched phone")
+
+	// signature
+	match, err = expectedUser.Match("signature", "Don't Worry Be Happy!")
+	assert.Truef(t, match, "should have matched signature")
+	assert.NoError(t, err, "error found for signature")
+
+	match, err = expectedUser.Match("signature", "garbage")
+	assert.NoError(t, err, "error found for signature")
+	assert.Falsef(t, match, "should have not matched signature")
+
+	// organization_id
+	match, err = expectedUser.Match("organization_id", "119")
+	assert.Truef(t, match, "should have matched organization_id")
+	assert.NoError(t, err, "error found for organization_id")
+
+	match, err = expectedUser.Match("organization_id", "100")
+	assert.NoError(t, err, "error found for organization_id")
+	assert.Falsef(t, match, "should have not matched organization_id")
+
+	_, err = expectedUser.Match("organization_id", "garbage")
+	assert.Error(t, err, "error should be found for organization_id")
+
+	// tags
+	match, err = expectedUser.Match("tags", "Springville")
+	assert.Truef(t, match, "should have matched tags")
+	assert.NoError(t, err, "error found for tags")
+
+	match, _ = expectedUser.Match("tags", "sarda.dev")
+	assert.Falsef(t, match, "should have not matched tags")
+
+	// shared
+	match, err = expectedUser.Match("suspended", "true")
+	assert.Truef(t, match, "should have matched suspended")
+	assert.NoError(t, err, "error found for suspended")
+
+	match, _ = expectedUser.Match("suspended", "false")
+	assert.Falsef(t, match, "should have not matched suspended")
+
+	// role
+	match, err = expectedUser.Match("role", "admin")
+	assert.Truef(t, match, "should have matched role")
+	assert.NoError(t, err, "error found for role")
+
+	match, err = expectedUser.Match("role", "grabge")
+	assert.NoError(t, err, "error found for role")
+	assert.Falsef(t, match, "should have not matched role")
+}
+
 func TestUserJsonParse(t *testing.T) {
 
 	var result db.User
 	userJson, _ := os.ReadFile("db_testdata/user.json")
 	json.Unmarshal(userJson, &result)
-
-	// Check first value
-	createdAt, _ := time.Parse(utility.ZendeskTimeFormat, "2016-04-15T05:19:46 -10:00")
-	lastLoginAt, _ := time.Parse(utility.ZendeskTimeFormat, "2013-08-04T01:03:27 -10:00")
-	expectedUser := db.User{
-		ID:             1,
-		URL:            "http://initech.zendesk.com/api/v2/users/1.json",
-		ExternalID:     "74341f74-9c79-49d5-9611-87ef9b6eb75f",
-		Name:           "Francisca Rasmussen",
-		Alias:          "Miss Coffey",
-		CreatedAt:      utility.ZendeskTime{Time: createdAt},
-		Active:         true,
-		Verified:       true,
-		Shared:         false,
-		Locale:         "en-AU",
-		Timezone:       "Sri Lanka",
-		LastLoginAt:    utility.ZendeskTime{Time: lastLoginAt},
-		Email:          "coffeyrasmussen@flotonic.com",
-		Phone:          "8335-422-718",
-		Signature:      "Don't Worry Be Happy!",
-		OrganizationID: 119,
-		Tags: []string{
-			"Springville",
-			"Sutton",
-			"Hartsville/Hartley",
-			"Diaperville",
-		},
-		Suspended: true,
-		Role:      "admin",
-	}
 
 	assert.Equal(t, expectedUser, result, "user not parsed correctly check User json tags")
 }
