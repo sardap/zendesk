@@ -18,68 +18,88 @@ func init() {
 	ErrInvalidResouce = fmt.Errorf("invalid resouce given")
 }
 
-type Resource string
+type ResourceType string
 
 const (
-	ResourceOrganization Resource = "organization"
-	ResourceUser         Resource = "user"
-	ResourceTicket       Resource = "ticket"
+	ResourceOrganization ResourceType = "organization"
+	ResourceUser         ResourceType = "user"
+	ResourceTicket       ResourceType = "ticket"
 )
 
-type Condition interface {
-	Resolve(db *DB) (bool, error)
-}
-
-type Query struct {
-	Target     Resource
-	Conditions []Condition
-}
-
-type FulLMatchCondition struct {
-	Resource Resource
-	Field    string
-	Match    string
-}
-
-func (f *FulLMatchCondition) Resolve(db *DB) (bool, error) {
-	var resource interface{}
-
-	switch f.Resource {
-	case ResourceOrganization:
-		resource = Organization{}
-	case ResourceUser:
-		resource = User{}
-	case ResourceTicket:
-		resource = Ticket{}
-	default:
-		return false, errors.Wrapf(ErrInvalidResouce, "%s", f.Resource)
-	}
-
-	reflectInfo := reflect.TypeOf(resource)
+// Converts json struct tag into the associated field
+func getFieldName(obj interface{}, field string) string {
+	// This is slower then a switch but requires no extra code When we add a new fied to a struct
+	reflectInfo := reflect.TypeOf(obj)
 	for i := 0; i < reflectInfo.NumField(); i++ {
 		memeber := reflectInfo.Field(i)
 		tag := string(memeber.Tag)
 		tag = strings.TrimPrefix(tag, `json:"`)
 		tag = strings.TrimSuffix(tag, `"`)
 
-		// Target filed found
-		if strings.ToLower(f.Field) == tag {
-			switch f.Resource {
-			case ResourceOrganization:
-				for _, val := range db.orgs {
-					v := reflect.ValueOf(resource).Field(i).Interface()
-					targetValue := fmt.Sprintf("%v", v)
-					return targetValue == f.Match, nil
-				}
-			case ResourceUser:
-				resource = User{}
-			case ResourceTicket:
-				resource = Ticket{}
-			}
-
-			break
+		// Target field found
+		if strings.ToLower(field) == tag {
+			return memeber.Name
 		}
 	}
 
-	return false, errors.Wrapf(ErrFieldMissing, "unable to find %s in %s", f.Field, f.Resource)
+	return ""
+}
+
+type Condition interface {
+	Resolve(db *DB) (interface{}, error)
+}
+
+type Query struct {
+	Conditions []Condition
+}
+
+type FulLMatchCondition struct {
+	Resource ResourceType
+	Field    string
+	Match    string
+}
+
+func (f *FulLMatchCondition) Resolve(db *DB) (interface{}, error) {
+
+	getValue := func(value interface{}, fieldName string) string {
+		reflectValue := reflect.Indirect(reflect.ValueOf(value))
+		return fmt.Sprintf("%v", reflectValue.FieldByName(fieldName).Interface())
+	}
+
+	switch f.Resource {
+	case ResourceOrganization:
+		fieldName := getFieldName(Organization{}, f.Field)
+		if fieldName == "" {
+			return nil, errors.Wrapf(ErrFieldMissing, "unable to find %s in %s", f.Field, f.Resource)
+		}
+		for _, val := range db.orgs {
+			if getValue(val, fieldName) == f.Match {
+				return val, nil
+			}
+		}
+	case ResourceUser:
+		fieldName := getFieldName(User{}, f.Field)
+		if fieldName == "" {
+			return nil, errors.Wrapf(ErrFieldMissing, "unable to find %s in %s", f.Field, f.Resource)
+		}
+		for _, val := range db.users {
+			if getValue(val, fieldName) == f.Match {
+				return val, nil
+			}
+		}
+	case ResourceTicket:
+		fieldName := getFieldName(Ticket{}, f.Field)
+		if fieldName == "" {
+			return nil, errors.Wrapf(ErrFieldMissing, "unable to find %s in %s", f.Field, f.Resource)
+		}
+		for _, val := range db.tickets {
+			if getValue(val, fieldName) == f.Match {
+				return val, nil
+			}
+		}
+	default:
+		return false, errors.Wrapf(ErrInvalidResouce, "%s", f.Resource)
+	}
+
+	return false, errors.Wrapf(ErrNotFound, "no matches for %s with %s in %s", f.Field, f.Match, f.Resource)
 }
