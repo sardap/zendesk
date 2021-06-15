@@ -19,12 +19,12 @@ func getFiles() (*os.File, *os.File, *os.File) {
 
 func createBlankDb() *db.DB {
 	emptyJson := "[]"
-	reuslt, _ := db.Create(
+	result, _ := db.Create(
 		bytes.NewBufferString(emptyJson),
 		bytes.NewBufferString(emptyJson),
 		bytes.NewBufferString(emptyJson),
 	)
-	return reuslt
+	return result
 }
 
 func createLoadedDB() *db.DB {
