@@ -24,14 +24,16 @@
 
 full example 
 ```
-	-orgs_file "db/db_testdata/organizations.json" \
+	./zendesk -orgs_file "db/db_testdata/organizations.json" \
 	-users_file "db/db_testdata/users.json" \
 	-tickets_file "db/db_testdata/tickets.json" \
 	-query "user id 74"
 ```
 
 Query Examples
-* `user name 
+* `user name Francisca Rasmussen` returns all users named Rasmussen
+* `organization domain_names boink.com` returns all organizations with kage.com in the domain_names list
+* `ticket type incident` returns all tickets of the type incident
 
 ## Using Docker
 
