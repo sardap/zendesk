@@ -46,6 +46,7 @@ Run `docker run --rm -v ${PWD}:/app zendesk-coding:paul-sarda`
 ## Local
 
 ### Building
+You will need at least go 1.16.2
 run `go build .`
 
 ### Running
